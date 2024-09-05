@@ -2,6 +2,7 @@ package http
 
 import (
 	"compress/gzip"
+	"crypto/tls"
 	"fmt"
 	"io"
 	stdurl "net/url"
@@ -17,6 +18,7 @@ type Client struct {
 
 	// FollowRedirects instructs the client to follow 301/302 redirects when idempotent.
 	FollowRedirects bool
+	TLSClientConfig *tls.Config
 }
 
 // Do sends an HTTP request and returns an HTTP response. If the response body is non nil
@@ -31,9 +33,6 @@ func (c *Client) Do(method, url string, headers map[string][]string, body io.Rea
 	}
 	host := u.Host
 	headers["Host"] = []string{host}
-	if !strings.Contains(host, ":") {
-		host += ":80"
-	}
 	path := u.Path
 	if path == "" {
 		path = "/"
@@ -41,9 +40,23 @@ func (c *Client) Do(method, url string, headers map[string][]string, body io.Rea
 	if u.RawQuery != "" {
 		path += "?" + u.RawQuery
 	}
-	conn, err := c.dialer.Dial("tcp", host)
-	if err != nil {
-		return client.Status{}, nil, nil, err
+	var conn Conn
+	if u.Scheme == "https" {
+		if !strings.Contains(host, ":") {
+			host += ":443"
+		}
+		conn, err = c.dialer.DialTLS("tcp", host, c.TLSClientConfig)
+		if err != nil {
+			return client.Status{}, nil, nil, err
+		}
+	} else {
+		if !strings.Contains(host, ":") {
+			host += ":80"
+		}
+		conn, err = c.dialer.Dial("tcp", host)
+		if err != nil {
+			return client.Status{}, nil, nil, err
+		}
 	}
 	req := toRequest(method, path, nil, headers, body)
 	if err := conn.WriteRequest(req); err != nil {

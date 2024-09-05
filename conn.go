@@ -1,6 +1,7 @@
 package http
 
 import (
+	"crypto/tls"
 	"io"
 	"net"
 	"sync"
@@ -13,6 +14,7 @@ import (
 type Dialer interface {
 	// Dial dials a remote http server returning a Conn.
 	Dial(network, addr string) (Conn, error)
+	DialTLS(network, addr string, conf *tls.Config) (Conn, error)
 }
 
 type dialer struct {
@@ -35,6 +37,28 @@ func (d *dialer) Dial(network, addr string) (Conn, error) {
 	}
 	d.Unlock()
 	c, err := net.Dial(network, addr)
+	return &conn{
+		Client: client.NewClient(c),
+		Conn:   c,
+		dialer: d,
+	}, err
+}
+
+func (d *dialer) DialTLS(network, addr string, conf *tls.Config) (Conn, error) {
+	d.Lock()
+	if d.conns == nil {
+		d.conns = make(map[string][]Conn)
+	}
+	if c, ok := d.conns[addr]; ok {
+		if len(c) > 0 {
+			conn := c[0]
+			c[0], c = c[len(c)-1], c[:len(c)-1] // nolint:staticcheck
+			d.Unlock()
+			return conn, nil
+		}
+	}
+	d.Unlock()
+	c, err := tls.Dial(network, addr, conf)
 	return &conn{
 		Client: client.NewClient(c),
 		Conn:   c,
