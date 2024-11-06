@@ -1,4 +1,4 @@
-// Package gorilla/http/client contains the lower level HTTP client implementation.
+// Package stfn/http/client contains the lower level HTTP client implementation.
 //
 // Package client is divided into two layers. The upper layer is the client.Client layer
 // which handles the vaguaries of http implementations. The lower layer, two types, reader
@@ -6,7 +6,7 @@
 //
 // The interface presented by client.Client is very powerful. It is not expected that normal
 // consumers of HTTP services will need to operate at this level and should instead user the
-// higher level interfaces in the gorilla/http package.
+// higher level interfaces in the stfn/http package.
 package client
 
 import (

@@ -8,7 +8,7 @@ import (
 	stdurl "net/url"
 	"strings"
 
-	"github.com/gorilla/http/client"
+	"github.com/stfn/http/client"
 )
 
 // Client implements a high level HTTP client. Client methods can be called concurrently

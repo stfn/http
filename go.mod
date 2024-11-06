@@ -1,3 +1,3 @@
-module github.com/gorilla/http
+module github.com/stfn/http
 
 go 1.20
